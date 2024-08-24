@@ -65,42 +65,42 @@ Bridge : A Docker bridge network is a private internal network created by Docker
 
 Basic Docker Commands
 
-Check Docker version: docker version
+Check Docker version: - docker version
 
-List namespaces: lsns
+List namespaces: -  lsns
 
-List PID namespaces: lsns -t pid
+List PID namespaces:-    lsns -t pid
 
-Run a container: docker run --name app1 nginx:latest
+Run a container:-    docker run --name app1 nginx:latest
 
-Run a container in the background: docker -d run --name app1 nginx:latest
+Run a container in the background: -    docker -d run --name app1 nginx:latest
 
-Create multiple containers: for i in {1..10}; do docker run -d nginx:latest; done
+Create multiple containers: -   for i in {1..10}; do docker run -d nginx:latest; done
 
-List running containers: docker ps
+List running containers:-    docker ps
 
-Stop all containers: docker stop $(docker ps -aq)
-# Add alias dstop='docker stop $(docker stop -aq)' under the .bashrc, then enter source .bashrc
+Stop all containers: -  docker stop $(docker ps -aq)
+Add alias dstop='docker stop $(docker stop -aq)' under the .bashrc, then enter source .bashrc
 
 Remove all stopped container: docker rm $(docker ps -aq)
-# Add alias sremove='docker rm $(docker stop -aq)' under the .bashrc, then enter source .bashrc
+Add alias sremove='docker rm $(docker stop -aq)' under the .bashrc, then enter source .bashrc
 
-#removed the comatiner if stopped with flag --rm
+removed the comatiner if stopped with flag --rm
 
 Deploy and remove containers: docker run --rm -d --name app1 nginx:latest
 
-Deploy and restart containers if stopped: docker run --restart always -d --name app1 nginx:latest
+Deploy and restart containers if stopped: - docker run --restart always -d --name app1 nginx:latest
 
 Inspect a container: docker inspect app1
     here , we can see that  "IPAddress": "172.17.0.2",/ "IPAddress": "172.17.0.3",  "IPAddress": "172.17.0.4. so, first network  "IPAddress": "172.17.0.1 is used by "docker0"
     verify: ifconfig
 
 Port forwarding: docker run --rm -d --name app1 -p 8000:80 nginx:latest
-View logs: docker logs app1 -f
-  cd  /var/lib/docker/containers/
-  ls -al
-  cd container_id
-  cat -json.log (actual logs of conatainer) | jq
+View logs: -    docker logs app1 -f
+  - cd  /var/lib/docker/containers/
+  - ls -al
+  - cd container_id
+  - cat -json.log (actual logs of conatainer) | jq
 
 Commands:
   attach      Attach local standard input, output, and error streams to a running container
