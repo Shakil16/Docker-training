@@ -298,37 +298,37 @@ db.bios.insertMany([
 
 ######################################################################
 
-docker run --rm -d --name app1 -v /var/run/docker.sock:/var/run/docker.sock --network  none shakil1602/troubleshootingtools:v1
+    docker run --rm -d --name app1 -v /var/run/docker.sock:/var/run/docker.sock --network  none shakil1602/troubleshootingtools:v1
 
-docker volume create portainer_data
+    docker volume create portainer_data
 
-docker run -d -p 8000:8000 -p 9443:9443 --name portainer \
-        --restart=always \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v portainer_data:/data \
-        portainer/portainer-ce:2.11.1
+    docker run -d -p 8000:8000 -p 9443:9443 --name portainer \
+    --restart=always \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v portainer_data:/data \
+    portainer/portainer-ce:2.11.1
 
 
-    Beakdown of the Command:
-        docker run -d: Runs the container in detached mode (in the background).
+Beakdown of the Command:
+docker run -d: Runs the container in detached mode (in the background).
 
-        -p 8000:8000:8000 is for container agent, Agent allows remote management of Docker environments.
-        
-        -p 9443:9443: 9443 is for for https interface
-        
-        --name portainer: Names the container portainer.
+-p 8000:8000:8000 is for container agent, Agent allows remote management of Docker environments.
 
-        --restart=always: Ensures the container restarts automatically if it stops or if Docker restarts.
+-p 9443:9443: 9443 is for for https interface
 
-        -v /var/run/docker.sock:/var/run/docker.sock: Mounts the Docker socket from the host into the container, allowing Portainer to control the Docker daemon.
+--name portainer: Names the container portainer.
 
-        -v portainer_data:/data: Mounts the Docker volume portainer_data to the /data directory in the container, where Portainer stores its data.
-        portainer/portainer-ce:2.11.1: Specifies the image to use for the container (portainer-ce version 2.11.1).
+--restart=always: Ensures the container restarts automatically if it stops or if Docker restarts.
 
-        Accessing Portainer:
-        After running this command, you can access the Portainer UI via:
-       
-        HTTPS: https://<host-ip>:9443
-        https://54.71.74.129:9443/
-        ![alt text](image.png)
-        This command sets up Portainer with HTTPS access. The version specified (2.11.1) is the one you're pulling from Docker Hub.        
+-v /var/run/docker.sock:/var/run/docker.sock: Mounts the Docker socket from the host into the container, allowing Portainer to control the Docker daemon.
+
+-v portainer_data:/data: Mounts the Docker volume portainer_data to the /data directory in the container, where Portainer stores its data.
+portainer/portainer-ce:2.11.1: Specifies the image to use for the container (portainer-ce version 2.11.1).
+
+Accessing Portainer:
+After running this command, you can access the Portainer UI via:
+
+HTTPS: https://<host-ip>:9443
+https://54.71.74.129:9443/
+![alt text](image.png)
+This command sets up Portainer with HTTPS access. The version specified (2.11.1) is the one you're pulling from Docker Hub.        
