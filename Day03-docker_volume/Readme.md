@@ -1,8 +1,8 @@
-docker volume ls
-docker volume create mongodb
-docker run –rm -d  --name mongodb -v mongodb:/data/db -p 27017: 27017 mongo:latest
-docker ps 
-get into container docker exec -it mongodb mongosh > showdbs 
+    docker volume ls
+    docker volume create mongodb
+    docker run –rm -d  --name mongodb -v mongodb:/data/db -p 27017: 27017 mongo:latest
+    docker ps 
+    get into container docker exec -it mongodb mongosh > showdbs 
 #Add some data init
 
 db.helo.insertMany([
