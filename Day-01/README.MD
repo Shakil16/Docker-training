@@ -142,5 +142,4 @@ Commands:
   unpause     Unpause all processes within one or more containers
   update      Update configuration of one or more containers
   wait        Block until one or more containers stop, then print their exit codes
-
  Run 'docker COMMAND --help' for more information on a command. 
