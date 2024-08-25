@@ -51,7 +51,7 @@ Example: Companies often use private registries to store their internal applicat
 
 # Installing Docker & Network changes 
 
-curl https://get.docker.com/ | bash 
+  curl https://get.docker.com/ | bash 
 
 Netwrok : Bridge - Host - none
 
@@ -63,33 +63,44 @@ Bridge : A Docker bridge network is a private internal network created by Docker
 
 # Listing namespaces & Running basic docker commands 
 
-Basic Docker Commands
+Basic Docker Commands 
+Check Docker version:
+  docker version
 
-Check Docker version: - docker version
+List namespaces:
+  lsns
 
-List namespaces: -  lsns
+  List PID namespaces:
+    lsns -t pid
 
-List PID namespaces:-    lsns -t pid
+Run a container:  
+  docker run --name app1 nginx:latest
 
-Run a container:-    docker run --name app1 nginx:latest
+Run a container in the background:  
+  docker -d run --name app1 nginx:latest
 
-Run a container in the background: -    docker -d run --name app1 nginx:latest
+Create multiple containers: 
+  for i in {1..10}; do docker run -d nginx:latest; done
 
-Create multiple containers: -   for i in {1..10}; do docker run -d nginx:latest; done
+List running containers:  
+  docker ps
 
-List running containers:-    docker ps
+Stop all containers: -  
+  docker stop $(docker ps -aq)
+Add alias to bigger command,under the .bashrc, then enter source .bashrc
+  alias dstop='docker stop $(docker stop -aq)' 
+  alias dremove='docker rm $(docker stop -aq)'
 
-Stop all containers: -  docker stop $(docker ps -aq)
-Add alias dstop='docker stop $(docker stop -aq)' under the .bashrc, then enter source .bashrc
-
-Remove all stopped container: docker rm $(docker ps -aq)
-Add alias sremove='docker rm $(docker stop -aq)' under the .bashrc, then enter source .bashrc
+Remove all stopped container:
+  docker rm $(docker ps -aq)
 
 removed the comatiner if stopped with flag --rm
 
-Deploy and remove containers: docker run --rm -d --name app1 nginx:latest
+Deploy and remove containers: 
+  docker run --rm -d --name app1 nginx:latest
 
-Deploy and restart containers if stopped: - docker run --restart always -d --name app1 nginx:latest
+Deploy and restart containers if stopped: -
+  docker run --restart always -d --name app1 nginx:latest
 
 Inspect a container: docker inspect app1
     here , we can see that  "IPAddress": "172.17.0.2",/ "IPAddress": "172.17.0.3",  "IPAddress": "172.17.0.4. so, first network  "IPAddress": "172.17.0.1 is used by "docker0"
@@ -133,7 +144,3 @@ Commands:
   wait        Block until one or more containers stop, then print their exit codes
 
  Run 'docker COMMAND --help' for more information on a command. 
-
-
-
-   
