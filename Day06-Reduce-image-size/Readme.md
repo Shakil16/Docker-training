@@ -43,27 +43,27 @@ Single Stage Vs Multi-Stage Builds Comparison:
 Take an example of a Flask app built using the python:3.9-alpine image with a single-stage Dockerfile like:
 
 # Use an official Python runtime as a parent image
-FROM python:3.9-alpine
+    FROM python:3.9-alpine
 
-# Install necessary build dependencies
-RUN apk add --no-cache build-base \
-    && apk add --no-cache gfortran musl-dev lapack-dev
+    # Install necessary build dependencies
+    RUN apk add --no-cache build-base \
+        && apk add --no-cache gfortran musl-dev lapack-dev
 
-# Set the working directory
-WORKDIR /app
+    # Set the working directory
+    WORKDIR /app
 
-# Copy the requirements file and install dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+    # Copy the requirements file and install dependencies
+    COPY requirements.txt ./
+    RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code to the working directory
-COPY . .
+    # Copy the rest of the application code to the working directory
+    COPY . .
 
-# Expose the port the app will run on
-EXPOSE 5000
+    # Expose the port the app will run on
+    EXPOSE 5000
 
-# Run the Flask app
-CMD ["python", "app.py"]
+    # Run the Flask app
+    CMD ["python", "app.py"]
 
 Docker - Single Stage Build Output
 
@@ -72,42 +72,42 @@ The image built was of size: 588 MB
 Redesigned Multi Stage Dockerfile looks like:
 
 
-# Dockerfile.multi-stage
+    # Dockerfile.multi-stage
 
-# Stage 1: Build
-FROM python:3.9-alpine AS builder
+    # Stage 1: Build
+    FROM python:3.9-alpine AS builder
 
-# Install necessary build dependencies
-RUN apk add --no-cache build-base \
-    && apk add --no-cache gfortran musl-dev lapack-dev
+    # Install necessary build dependencies
+    RUN apk add --no-cache build-base \
+        && apk add --no-cache gfortran musl-dev lapack-dev
 
-# Set the working directory
-WORKDIR /app
+    # Set the working directory
+    WORKDIR /app
 
-# Copy the requirements file and install dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+    # Copy the requirements file and install dependencies
+    COPY requirements.txt ./
+    RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code to the working directory
-COPY . .
+    # Copy the rest of the application code to the working directory
+    COPY . .
 
-# Uninstall unnecessary dependencies
-RUN pip uninstall -y pandas && apk del build-base gfortran musl-dev lapack-dev
+    # Uninstall unnecessary dependencies
+    RUN pip uninstall -y pandas && apk del build-base gfortran musl-dev lapack-dev
 
-# Stage 2: Production
-FROM python:3.9-alpine
+    # Stage 2: Production
+    FROM python:3.9-alpine
 
-# Set the working directory
-WORKDIR /app
+    # Set the working directory
+    WORKDIR /app
 
-# Copy only the necessary files from the build stage
-COPY --from=builder /app /app
+    # Copy only the necessary files from the build stage
+    COPY --from=builder /app /app
 
-# Expose the port the app will run on
-EXPOSE 5000
+    # Expose the port the app will run on
+    EXPOSE 5000
 
-# Run the Flask app
-CMD ["python", "app.py"]
+    # Run the Flask app
+    CMD ["python", "app.py"]
 
 Docker - Multi Stage Build Output
 
@@ -124,10 +124,10 @@ If your application can be compiled into a static binary, you can use the scratc
 
 Example:
 
-FROM scratch
-COPY myapp /
-CMD ["/myapp"]
-Works well for applications that don’t need operating system-level dependencies.
+    FROM scratch
+    COPY myapp /
+    CMD ["/myapp"]
+    Works well for applications that don’t need operating system-level dependencies.
 
 Security Considerations
 Use Trusted and Official Base Images
@@ -145,3 +145,16 @@ Final reminder,
 
 Less the image size = Faster deployments + Quicker scaling + Lean infrastructure
 
+Google Distroless Images and Docker Multi-Stage Builds
+
+What are Distroless Images?
+
+Distroless images are Docker images built by Google that contain only your application and its runtime dependencies, without a package manager or any additional software. This approach minimizes the attack surface and reduces the size of your container image.
+
+Why Use Distroless Images?
+
+Reduced Attack Surface: Since Distroless images contain only your application and its dependencies, they eliminate unnecessary tools and libraries that could be exploited by attackers.
+
+Smaller Image Size: By excluding unnecessary components, Distroless images are significantly smaller in size compared to traditional Linux distribution-based images. This results in faster image pulls and reduced storage costs.
+
+https://github.com/GoogleContainerTools/distroless
