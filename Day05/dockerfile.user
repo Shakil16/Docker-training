@@ -1,0 +1,28 @@
+# Use an official Python runtime as a parent image
+FROM python:3.11-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Create a non-root user and group
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -d /app -s /sbin/nologin -c "Docker image user" appuser
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY . .
+
+# Change ownership of the application directory
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
+# Specify the port the application will run on
+EXPOSE 8080
+
+# Run the application
+CMD ["python", "app.py"]
