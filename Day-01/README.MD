@@ -1,148 +1,494 @@
+# Docker Fundamentals
 
+## Hardware Components
 
-Hardware Components:
-CPU: Central Processing Unit, the brain of the computer.
-RAM: Random Access Memory, temporary storage for data being used.
-HD: Hard Drive, permanent storage for data.
-Graphic Cards: Hardware for rendering images and video.
+- **CPU (Central Processing Unit)** – The brain of the computer that executes instructions.
+- **RAM (Random Access Memory)** – Temporary memory used by running applications.
+- **Hard Disk (HDD/SSD)** – Permanent storage for files and operating systems.
+- **Graphics Card (GPU)** – Hardware responsible for rendering graphics and videos.
 
-Software Components:
-Operating System: The main software that manages hardware and software resources.
-Applications: Software you use, such as Zen Recorder for recording videos or games.
+---
 
-The Kernel:
-The kernel is the core part of an operating system. It acts as a bridge between software and hardware, converting requests into instructions the hardware can understand.
+## Software Components
 
-Container Runtimes
-There are several runtimes for running containers, including:
-Container-D
-Docker
-CRI-O
+- **Operating System (OS)** – Manages hardware resources and provides services to applications.
+- **Applications** – Programs such as web browsers, IDEs, games, or tools like Zen Recorder.
 
-# Note: In production environments, Container-D is typically used. Developers often use Docker for local testing. For example, KIND (Kubernetes IN Docker) is used to create Kubernetes clusters in Docker for testing.
+---
 
+# The Linux Kernel
 
-# Container vs Virtual machines 
+The **kernel** is the core component of an operating system.
 
-![Alt text](Docker_architecture.png)
+It acts as a bridge between software and hardware by:
 
-Virtual Machines (VMs) are like having a complete, separate computer within your computer. Each VM runs its own full operating system, like having another Windows or Linux inside your main system. Because they need to load an entire OS, VMs are big and take a while to start. They are very isolated from each other, making them secure, as each VM operates independently without knowing about the others.
+- Managing CPU and memory
+- Managing devices
+- Handling system calls
+- Converting application requests into hardware instructions
 
-Containers, on the other hand, are like small, self-contained environments inside your computer. They share the main computer’s operating system but have their own space for running applications. Containers are much smaller and start very quickly since they don’t need a full OS. They offer enough isolation to keep applications separate but are less isolated than VMs because they share the same OS.
+```
+Application
+      │
+      ▼
+   Linux Kernel
+      │
+      ▼
+ Hardware (CPU, RAM, Disk, Network)
+```
 
-----
+---
 
-# Docker Architecture 
+# Container Runtimes
 
-![Alt text](docker-architecture.png)
+Popular container runtimes include:
 
-Docker Client
-What it is: The Docker client is like the command center for Docker. It’s where you type in commands to tell Docker what to do.
-How it works: You use the Docker client to build, run, and manage Docker containers. It talks to the Docker daemon, which does the actual work.
-Example commands: docker build, docker run, docker pull.
-Docker Hub
-What it is: Docker Hub is an online service where you can find and store Docker images.
-How it works: It’s like an app store but for Docker images. You can download (“pull”) images others have created, or upload (“push”) your own images.
-Usage: When you need an image to create a container, you can pull it from Docker Hub.
-Docker Registry
-What it is: A Docker registry is a place to store Docker images. Docker Hub is the most popular public registry, but you can also have private registries.
-How it works: Registries stores the images you create and make them available for you to pull and run on your Docker client. Private registries are used for images you don’t want to share publicly.
-Example: Companies often use private registries to store their internal application images securely.
+- Docker
+- containerd
+- CRI-O
 
-# Installing Docker & Network changes 
+> **Production:** Most Kubernetes clusters use **containerd**.
+>
+> **Development:** Developers commonly use **Docker** for building and testing containers.
 
-  curl https://get.docker.com/ | bash 
+### Example
 
-Netwrok : Bridge - Host - none
+**KIND (Kubernetes IN Docker)** creates Kubernetes clusters inside Docker containers for local development.
 
-Bridge : A Docker bridge network is a private internal network created by Docker on the host machine. It's used to allow containers to communicate with each other within the same host.
+---
 
-![Alt text](341965063-09f22c6c-743a-480e-8e87-7156d090c65d.png)
+# Containers vs Virtual Machines
 
+| Virtual Machines | Containers |
+|------------------|------------|
+| Runs a full operating system | Shares the host OS kernel |
+| Large in size | Lightweight |
+| Slow startup | Fast startup |
+| Strong isolation | Process-level isolation |
+| Higher resource usage | Lower resource usage |
+| Suitable for multiple OSes | Suitable for microservices |
 
+### Virtual Machines
 
-# Listing namespaces & Running basic docker commands 
+- Includes a complete guest operating system
+- Uses a hypervisor
+- More secure isolation
+- Higher CPU and memory consumption
 
-Basic Docker Commands 
-Check Docker version:
-  docker version
+### Containers
 
-List namespaces:
-  lsns
+- Share the host kernel
+- Package only the application and dependencies
+- Start in seconds
+- Ideal for cloud-native applications
 
-  List PID namespaces:
-    lsns -t pid
+---
 
-Run a container:  
-  docker run --name app1 nginx:latest
+# Docker Architecture
 
-Run a container in the background:  
-  docker -d run --name app1 nginx:latest
+```
+              Docker Client
+          (docker commands)
+                    │
+                    ▼
+             Docker Daemon
+                    │
+        ┌───────────┴───────────┐
+        ▼                       ▼
+ Docker Images            Docker Containers
+        │
+        ▼
+ Docker Registry (Docker Hub / Private Registry)
+```
 
-Create multiple containers: 
-  for i in {1..10}; do docker run -d nginx:latest; done
+---
 
-List running containers:  
-  docker ps
+## Docker Client
 
-Stop all containers: -  
-  docker stop $(docker ps -aq)
-Add alias to bigger command,under the .bashrc, then enter source .bashrc
-  alias dstop='docker stop $(docker stop -aq)' 
-  alias dremove='docker rm $(docker stop -aq)'
+The Docker client is the command-line interface used to communicate with Docker.
 
-Remove all stopped container:
-  docker rm $(docker ps -aq)
+Common commands:
 
-removed the comatiner if stopped with flag --rm
+```bash
+docker build
+docker run
+docker pull
+docker push
+docker ps
+```
 
-Deploy and remove containers: 
-  docker run --rm -d --name app1 nginx:latest
+---
 
-Deploy and restart containers if stopped: -
-  docker run --restart always -d --name app1 nginx:latest
+## Docker Daemon
 
-Inspect a container: docker inspect app1
-    here , we can see that  "IPAddress": "172.17.0.2",/ "IPAddress": "172.17.0.3",  "IPAddress": "172.17.0.4. so, first network  "IPAddress": "172.17.0.1 is used by "docker0"
-    verify: ifconfig
+The Docker daemon performs all Docker operations, including:
 
-Port forwarding: docker run --rm -d --name app1 -p 8000:80 nginx:latest
-View logs: -    docker logs app1 -f
-  - cd  /var/lib/docker/containers/
-  - ls -al
-  - cd container_id
-  - cat -json.log (actual logs of conatainer) | jq
+- Building images
+- Running containers
+- Managing networks
+- Managing volumes
 
-Commands:
-  attach      Attach local standard input, output, and error streams to a running container
-  commit      Create a new image from a container's changes
-  cp          Copy files/folders between a container and the local filesystem
-  create      Create a new container
-  diff        Inspect changes to files or directories on a container's filesystem
-  events      Get real time events from the server
-  export      Export a container's filesystem as a tar archive
-  history     Show the history of an image
-  import      Import the contents from a tarball to create a filesystem image
-  inspect     Return low-level information on Docker objects
-  kill        Kill one or more running containers
-  load        Load an image from a tar archive or STDIN
-  logs        Fetch the logs of a container
-  pause       Pause all processes within one or more containers
-  port        List port mappings or a specific mapping for the container
-  rename      Rename a container
-  restart     Restart one or more containers
-  rm          Remove one or more containers
-  rmi         Remove one or more images
-  save        Save one or more images to a tar archive (streamed to STDOUT by default)
-  start       Start one or more stopped containers
-  stats       Display a live stream of container(s) resource usage statistics
-  stop        Stop one or more running containers
-  tag         Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE
-  top         Display the running processes of a container
-  unpause     Unpause all processes within one or more containers
-  update      Update configuration of one or more containers
-  wait        Block until one or more containers stop, then print their exit codes
- Run 'docker COMMAND --help' for more information on a command. 
+---
+
+## Docker Hub
+
+Docker Hub is the default public registry used to:
+
+- Pull images
+- Push images
+- Share container images
+
+Example:
+
+```bash
+docker pull nginx
+```
+
+---
+
+## Docker Registry
+
+A Docker registry stores Docker images.
+
+Examples:
+
+- Docker Hub (Public)
+- Harbor
+- AWS ECR
+- Google Artifact Registry
+- Azure Container Registry
+
+Organizations commonly use **private registries** to securely store internal images.
+
+---
+
+# Installing Docker
+
+Install Docker on Linux:
+
+```bash
+curl -fsSL https://get.docker.com | bash
+```
+
+Verify installation:
+
+```bash
+docker version
+docker info
+```
+
+---
+
+# Docker Networking
+
+Docker provides several networking modes.
+
+## Bridge Network (Default)
+
+- Default Docker network
+- Containers communicate using private IP addresses
+- Internet access through NAT
+
+```
+Container A
+      │
+      │
+Container B
+      │
+      ▼
+ docker0 Bridge
+      │
+      ▼
+ Host Machine
+```
+
+---
+
+## Host Network
+
+- Container shares the host's network stack.
+- No separate IP address is assigned.
+
+---
+
+## None Network
+
+- No networking.
+- Completely isolated container.
+
+---
+
+# Linux Namespaces
+
+List all namespaces:
+
+```bash
+lsns
+```
+
+List only PID namespaces:
+
+```bash
+lsns -t pid
+```
+
+---
+
+# Basic Docker Commands
+
+## Check Docker Version
+
+```bash
+docker version
+```
+
+---
+
+## Run a Container
+
+```bash
+docker run --name app1 nginx:latest
+```
+
+---
+
+## Run in Detached Mode
+
+```bash
+docker run -d --name app1 nginx:latest
+```
+
+---
+
+## Create Multiple Containers
+
+```bash
+for i in {1..10}; do
+    docker run -d nginx:latest
+done
+```
+
+---
+
+## List Running Containers
+
+```bash
+docker ps
+```
+
+List all containers:
+
+```bash
+docker ps -a
+```
+
+---
+
+## Stop All Containers
+
+```bash
+docker stop $(docker ps -aq)
+```
+
+---
+
+## Remove All Containers
+
+```bash
+docker rm $(docker ps -aq)
+```
+
+---
+
+## Automatically Remove Container After Exit
+
+```bash
+docker run --rm nginx
+```
+
+---
+
+## Deploy a Temporary Container
+
+```bash
+docker run --rm -d --name app1 nginx:latest
+```
+
+---
+
+## Restart Policy
+
+Always restart if the container exits.
+
+```bash
+docker run \
+--restart always \
+-d \
+--name app1 \
+nginx:latest
+```
+
+---
+
+# Docker Aliases
+
+Add these to your `~/.bashrc`.
+
+```bash
+alias dstop='docker stop $(docker ps -aq)'
+alias dremove='docker rm $(docker ps -aq)'
+```
+
+Reload Bash:
+
+```bash
+source ~/.bashrc
+```
+
+---
+
+# Inspect a Container
+
+```bash
+docker inspect app1
+```
+
+Example output:
+
+```json
+"IPAddress": "172.17.0.2"
+```
+
+Typical bridge network:
+
+```
+docker0      → 172.17.0.1
+Container 1  → 172.17.0.2
+Container 2  → 172.17.0.3
+Container 3  → 172.17.0.4
+```
+
+Verify bridge interface:
+
+```bash
+ifconfig
+```
+
+or
+
+```bash
+ip addr
+```
+
+---
+
+# Port Mapping
+
+Expose container port 80 on host port 8000.
+
+```bash
+docker run \
+-d \
+--rm \
+--name app1 \
+-p 8000:80 \
+nginx
+```
+
+Access:
+
+```
+http://localhost:8000
+```
+
+---
+
+# View Container Logs
+
+```bash
+docker logs app1
+```
+
+Follow logs:
+
+```bash
+docker logs -f app1
+```
+
+---
+
+# Docker Log Files
+
+Docker stores logs at:
+
+```bash
+cd /var/lib/docker/containers
+```
+
+List container directories:
+
+```bash
+ls -al
+```
+
+View log file:
+
+```bash
+cat <container-id>-json.log | jq
+```
+
+---
+
+# Common Docker Commands
+
+| Command | Description |
+|----------|-------------|
+| `docker attach` | Attach to a running container |
+| `docker commit` | Create an image from a container |
+| `docker cp` | Copy files between host and container |
+| `docker create` | Create a container without starting it |
+| `docker diff` | Show filesystem changes |
+| `docker events` | View real-time Docker events |
+| `docker export` | Export a container as a tar archive |
+| `docker history` | Show image history |
+| `docker import` | Import an image from a tar file |
+| `docker inspect` | Display detailed object information |
+| `docker kill` | Force stop a container |
+| `docker load` | Load an image from a tar archive |
+| `docker logs` | Display container logs |
+| `docker pause` | Pause all processes in a container |
+| `docker port` | Show port mappings |
+| `docker rename` | Rename a container |
+| `docker restart` | Restart a container |
+| `docker rm` | Remove container(s) |
+| `docker rmi` | Remove image(s) |
+| `docker save` | Save an image to a tar archive |
+| `docker start` | Start stopped container(s) |
+| `docker stats` | Live resource usage |
+| `docker stop` | Stop running container(s) |
+| `docker tag` | Tag an image |
+| `docker top` | Display running processes |
+| `docker unpause` | Resume paused container |
+| `docker update` | Update container configuration |
+| `docker wait` | Wait until a container exits |
+
+---
+
+# Getting Help
+
+For detailed help on any Docker command:
+
+```bash
+docker COMMAND --help
+```
+
+Example:
+
+```bash
+docker run --help
+docker build --help
+docker network --help
+```
 
 ---
 
