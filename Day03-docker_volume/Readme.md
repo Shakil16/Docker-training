@@ -1,359 +1,481 @@
-    docker volume ls
-    docker volume create mongodb
-    docker run –rm -d  --name mongodb -v mongodb:/data/db -p 27017: 27017 mongo:latest
-    docker ps 
-    get into container docker exec -it mongodb mongosh > showdbs 
-#Add some data init
+# Docker Volumes & Persistent Storage
 
+Containers are **ephemeral** by default. Any data written inside a container is lost when the container is removed.
+
+Docker provides **Volumes** and **Bind Mounts** to persist data outside the container lifecycle.
+
+---
+
+# List Existing Volumes
+
+```bash
+docker volume ls
+```
+
+Example:
+
+```text
+DRIVER    VOLUME NAME
+local     mongodb
+local     portainer_data
+```
+
+---
+
+# Create a Docker Volume
+
+```bash
+docker volume create mongodb
+```
+
+Verify:
+
+```bash
+docker volume ls
+```
+
+---
+
+# Run MongoDB Using a Docker Volume
+
+```bash
+docker run \
+-d \
+--rm \
+--name mongodb \
+-v mongodb:/data/db \
+-p 27017:27017 \
+mongo:latest
+```
+
+### Explanation
+
+| Option | Description |
+|---------|-------------|
+| `-d` | Run container in background |
+| `--rm` | Remove container when stopped |
+| `--name mongodb` | Container name |
+| `-v mongodb:/data/db` | Mount Docker volume |
+| `-p 27017:27017` | Expose MongoDB port |
+| `mongo:latest` | MongoDB image |
+
+---
+
+# Verify Container
+
+```bash
+docker ps
+```
+
+Expected output:
+
+```text
+CONTAINER ID   IMAGE          STATUS
+abc123         mongo:latest   Up 2 minutes
+```
+
+---
+
+# Connect to MongoDB
+
+```bash
+docker exec -it mongodb mongosh
+```
+
+Show databases:
+
+```javascript
+show dbs
+```
+
+Create or switch database:
+
+```javascript
+use demo
+```
+
+---
+
+# Insert Sample Data
+
+Create a collection named **helo**.
+
+```javascript
 db.helo.insertMany([
-{ "_id" : 1, "name" : "Matt", "status": "active", "level": 12, "score":202},
-        	{ "_id" : 2, "name" : "Frank", "status": "inactive", "level": 2, "score":9},
-        	{ "_id" : 3, "name" : "Karen", "status": "active", "level": 7, "score":87},
-        	{ "_id" : 4, "name" : "Katie", "status": "active", "level": 3, "score":27, "status": "married", "emp": "yes", "kids": 3},
-        	{ "_id" : 5, "name" : "Matt1", "status": "active", "level": 12, "score":202},
-        	{ "_id" : 6, "name" : "Frank2", "status": "inactive", "level": 2, "score":9},
-        	{ "_id" : 7, "name" : "Karen3", "status": "active", "level": 7, "score":87},
-        	{ "_id" : 8, "name" : "Katie4", "status": "active", "level": 3, "score":27, "status": "married", "emp": "yes", "kids": 3}
-        	])
-db.helo.find({name: "Katie"})
+  {
+    "_id": 1,
+    "name": "Matt",
+    "status": "active",
+    "level": 12,
+    "score": 202
+  },
+  {
+    "_id": 2,
+    "name": "Frank",
+    "status": "inactive",
+    "level": 2,
+    "score": 9
+  },
+  {
+    "_id": 3,
+    "name": "Karen",
+    "status": "active",
+    "level": 7,
+    "score": 87
+  },
+  {
+    "_id": 4,
+    "name": "Katie",
+    "status": "married",
+    "level": 3,
+    "score": 27,
+    "emp": "yes",
+    "kids": 3
+  }
+])
+```
 
-##############################################
+Query the collection:
 
+```javascript
+db.helo.find({ name: "Katie" })
+```
+
+Return all documents:
+
+```javascript
+db.helo.find()
+```
+
+Pretty output:
+
+```javascript
+db.helo.find().pretty()
+```
+
+---
+
+# Insert Sample Bios Collection
+
+Create another collection named **bios**.
+
+```javascript
 db.bios.insertMany([
-   {
-       "_id" : 1,
-       "name" : {
-           "first" : "John",
-           "last" : "Backus"
-       },
-       "birth" : ISODate("1924-12-03T05:00:00Z"),
-       "death" : ISODate("2007-03-17T04:00:00Z"),
-       "contribs" : [
-           "Fortran",
-           "ALGOL",
-           "Backus-Naur Form",
-           "FP"
-       ],
-       "awards" : [
-           {
-               "award" : "W.W. McDowell Award",
-               "year" : 1967,
-               "by" : "IEEE Computer Society"
-           },
-           {
-               "award" : "National Medal of Science",
-               "year" : 1975,
-               "by" : "National Science Foundation"
-           },
-           {
-               "award" : "Turing Award",
-               "year" : 1977,
-               "by" : "ACM"
-           },
-           {
-               "award" : "Draper Prize",
-               "year" : 1993,
-               "by" : "National Academy of Engineering"
-           }
-       ]
-   },
-   {
-       "_id" : ObjectId("51df07b094c6acd67e492f41"),
-       "name" : {
-           "first" : "John",
-           "last" : "McCarthy"
-       },
-       "birth" : ISODate("1927-09-04T04:00:00Z"),
-       "death" : ISODate("2011-12-24T05:00:00Z"),
-       "contribs" : [
-           "Lisp",
-           "Artificial Intelligence",
-           "ALGOL"
-       ],
-       "awards" : [
-           {
-               "award" : "Turing Award",
-               "year" : 1971,
-               "by" : "ACM"
-           },
-           {
-               "award" : "Kyoto Prize",
-               "year" : 1988,
-               "by" : "Inamori Foundation"
-           },
-           {
-               "award" : "National Medal of Science",
-               "year" : 1990,
-               "by" : "National Science Foundation"
-           }
-       ]
-   },
-   {
-       "_id" : 3,
-       "name" : {
-           "first" : "Grace",
-           "last" : "Hopper"
-       },
-       "title" : "Rear Admiral",
-       "birth" : ISODate("1906-12-09T05:00:00Z"),
-       "death" : ISODate("1992-01-01T05:00:00Z"),
-       "contribs" : [
-           "UNIVAC",
-           "compiler",
-           "FLOW-MATIC",
-           "COBOL"
-       ],
-       "awards" : [
-           {
-               "award" : "Computer Sciences Man of the Year",
-               "year" : 1969,
-               "by" : "Data Processing Management Association"
-           },
-           {
-               "award" : "Distinguished Fellow",
-               "year" : 1973,
-               "by" : " British Computer Society"
-           },
-           {
-               "award" : "W. W. McDowell Award",
-               "year" : 1976,
-               "by" : "IEEE Computer Society"
-           },
-           {
-               "award" : "National Medal of Technology",
-               "year" : 1991,
-               "by" : "United States"
-           }
-       ]
-   },
-   {
-       "_id" : 4,
-       "name" : {
-           "first" : "Kristen",
-           "last" : "Nygaard"
-       },
-       "birth" : ISODate("1926-08-27T04:00:00Z"),
-       "death" : ISODate("2002-08-10T04:00:00Z"),
-       "contribs" : [
-           "OOP",
-           "Simula"
-       ],
-       "awards" : [
-           {
-               "award" : "Rosing Prize",
-               "year" : 1999,
-               "by" : "Norwegian Data Association"
-           },
-           {
-               "award" : "Turing Award",
-               "year" : 2001,
-               "by" : "ACM"
-           },
-           {
-               "award" : "IEEE John von Neumann Medal",
-               "year" : 2001,
-               "by" : "IEEE"
-           }
-       ]
-   },
-   {
-       "_id" : 5,
-       "name" : {
-           "first" : "Ole-Johan",
-           "last" : "Dahl"
-       },
-       "birth" : ISODate("1931-10-12T04:00:00Z"),
-       "death" : ISODate("2002-06-29T04:00:00Z"),
-       "contribs" : [
-           "OOP",
-           "Simula"
-       ],
-       "awards" : [
-           {
-               "award" : "Rosing Prize",
-               "year" : 1999,
-               "by" : "Norwegian Data Association"
-           },
-           {
-               "award" : "Turing Award",
-               "year" : 2001,
-               "by" : "ACM"
-           },
-           {
-               "award" : "IEEE John von Neumann Medal",
-               "year" : 2001,
-               "by" : "IEEE"
-           }
-       ]
-   },
-   {
-       "_id" : 6,
-       "name" : {
-           "first" : "Guido",
-           "last" : "van Rossum"
-       },
-       "birth" : ISODate("1956-01-31T05:00:00Z"),
-       "contribs" : [
-           "Python"
-       ],
-       "awards" : [
-           {
-               "award" : "Award for the Advancement of Free Software",
-               "year" : 2001,
-               "by" : "Free Software Foundation"
-           },
-           {
-               "award" : "NLUUG Award",
-               "year" : 2003,
-               "by" : "NLUUG"
-           }
-       ]
-   },
-   {
-       "_id" : ObjectId("51e062189c6ae665454e301d"),
-       "name" : {
-           "first" : "Dennis",
-           "last" : "Ritchie"
-       },
-       "birth" : ISODate("1941-09-09T04:00:00Z"),
-       "death" : ISODate("2011-10-12T04:00:00Z"),
-       "contribs" : [
-           "UNIX",
-           "C"
-       ],
-       "awards" : [
-           {
-               "award" : "Turing Award",
-               "year" : 1983,
-               "by" : "ACM"
-           },
-           {
-               "award" : "National Medal of Technology",
-               "year" : 1998,
-               "by" : "United States"
-           },
-           {
-               "award" : "Japan Prize",
-               "year" : 2011,
-               "by" : "The Japan Prize Foundation"
-           }
-       ]
-   },
-   {
-       "_id" : 8,
-       "name" : {
-           "first" : "Yukihiro",
-           "aka" : "Matz",
-           "last" : "Matsumoto"
-       },
-       "birth" : ISODate("1965-04-14T04:00:00Z"),
-       "contribs" : [
-           "Ruby"
-       ],
-       "awards" : [
-           {
-               "award" : "Award for the Advancement of Free Software",
-               "year" : "2011",
-               "by" : "Free Software Foundation"
-           }
-       ]
-   },
-   {
-       "_id" : 9,
-       "name" : {
-           "first" : "James",
-           "last" : "Gosling"
-       },
-       "birth" : ISODate("1955-05-19T04:00:00Z"),
-       "contribs" : [
-           "Java"
-       ],
-       "awards" : [
-           {
-               "award" : "The Economist Innovation Award",
-               "year" : 2002,
-               "by" : "The Economist"
-           },
-           {
-               "award" : "Officer of the Order of Canada",
-               "year" : 2007,
-               "by" : "Canada"
-           }
-       ]
-   },
-   {
-       "_id" : 10,
-       "name" : {
-           "first" : "Martin",
-           "last" : "Odersky"
-       },
-       "contribs" : [
-           "Scala"
-       ]
-   }
+  {
+    name: {
+      first: "John",
+      last: "Backus"
+    },
+    contribs: [
+      "Fortran",
+      "ALGOL",
+      "FP"
+    ]
+  },
+  {
+    name: {
+      first: "Grace",
+      last: "Hopper"
+    },
+    contribs: [
+      "COBOL",
+      "Compiler"
+    ]
+  },
+  {
+    name: {
+      first: "Guido",
+      last: "van Rossum"
+    },
+    contribs: [
+      "Python"
+    ]
+  }
+])
+```
 
-] )
+Example query:
 
+```javascript
+db.bios.find()
+```
 
+Find Python contributor:
 
-######################################################################
+```javascript
+db.bios.find({
+    contribs: "Python"
+})
+```
 
-    docker run --rm -d --name app1 -v /var/run/docker.sock:/var/run/docker.sock --network  none shakil1602/troubleshootingtools:v1
+---
 
-    docker volume create portainer_data
+# Run Troubleshooting Tools Container
 
-    docker run -d -p 8000:8000 -p 9443:9443 --name portainer \
-    --restart=always \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v portainer_data:/data \
-    portainer/portainer-ce:2.11.1
+```bash
+docker run \
+-d \
+--rm \
+--name app1 \
+-v /var/run/docker.sock:/var/run/docker.sock \
+--network none \
+shakil1602/troubleshootingtools:v1
+```
 
+## Explanation
 
-Beakdown of the Command:
-docker run -d: Runs the container in detached mode (in the background).
+| Option | Description |
+|---------|-------------|
+| `--network none` | Disable networking |
+| `/var/run/docker.sock` | Allows the container to communicate with Docker daemon |
+| `--rm` | Remove container automatically |
 
--p 8000:8000:8000 is for container agent, Agent allows remote management of Docker environments.
+---
 
--p 9443:9443: 9443 is for for https interface
+# Portainer
 
---name portainer: Names the container portainer.
+Portainer is a lightweight web UI for managing Docker environments.
 
---restart=always: Ensures the container restarts automatically if it stops or if Docker restarts.
+---
 
--v /var/run/docker.sock:/var/run/docker.sock: Mounts the Docker socket from the host into the container, allowing Portainer to control the Docker daemon.
+## Create Volume
 
--v portainer_data:/data: Mounts the Docker volume portainer_data to the /data directory in the container, where Portainer stores its data.
-portainer/portainer-ce:2.11.1: Specifies the image to use for the container (portainer-ce version 2.11.1).
+```bash
+docker volume create portainer_data
+```
 
-Accessing Portainer:
-After running this command, you can access the Portainer UI via:
+---
 
-HTTPS: https://<host-ip>:9443
-https://54.71.74.129:9443/
-![alt text](image.png)
-This command sets up Portainer with HTTPS access. The version specified (2.11.1) is the one you're pulling from Docker Hub.        
+## Run Portainer
+
+```bash
+docker run -d \
+-p 8000:8000 \
+-p 9443:9443 \
+--name portainer \
+--restart always \
+-v /var/run/docker.sock:/var/run/docker.sock \
+-v portainer_data:/data \
+portainer/portainer-ce:2.11.1
+```
+
+---
+
+## Command Breakdown
+
+| Option | Description |
+|---------|-------------|
+| `-d` | Detached mode |
+| `-p 8000:8000` | Portainer Agent |
+| `-p 9443:9443` | HTTPS Web UI |
+| `--restart always` | Automatically restart container |
+| `-v /var/run/docker.sock:/var/run/docker.sock` | Access Docker daemon |
+| `-v portainer_data:/data` | Persistent Portainer data |
+| `portainer/portainer-ce:2.11.1` | Docker image |
+
+---
+
+## Access Portainer
+
+Open your browser:
+
+```
+https://<SERVER-IP>:9443
+```
+
+Example:
+
+```
+https://54.71.74.129:9443
+```
+
+The first time you log in, Portainer will ask you to:
+
+- Create an admin user
+- Configure the local Docker environment
 
 ---
 
 # Container Storage Internals
 
-Every running container has a thin writable layer above read-only image layers. It is useful for temporary changes, but removing the container removes this layer, so it is not appropriate for important application data.
+Every container consists of:
 
-## Storage Choices
-
-| Type | Description | Best use |
-| --- | --- | --- |
-| Volume | Docker-managed persistent storage | Databases and application data |
-| Bind mount | A specific host path mounted into the container | Local development and direct host access |
-| tmpfs mount | Memory-backed temporary storage | Sensitive or temporary data |
-
-```bash
-# Docker-managed volume
-docker volume create pgdata
-docker run -v pgdata:/var/lib/postgresql/data postgres:16
-
-# Bind mount (Windows example)
-docker run -v C:\app:/app node:20
+```
+           Writable Layer
+        (Container Layer)
+                ▲
+────────────────────────────────
+        Read-only Image Layer 3
+────────────────────────────────
+        Read-only Image Layer 2
+────────────────────────────────
+        Read-only Image Layer 1
+────────────────────────────────
 ```
 
-Volumes are independent of a container lifecycle, so they are preferred for persistent data. Bind mounts expose a selected host directory, which is useful in development. Use tmpfs when data should remain only in memory.
+The **Writable Layer** stores:
+
+- New files
+- Modified files
+- Deleted files
+
+If the container is removed, **this writable layer is also removed**.
+
+Therefore, important data should never be stored only inside the container.
+
+---
+
+# Docker Storage Options
+
+| Storage Type | Description | Best Use |
+|--------------|-------------|----------|
+| Volume | Docker-managed persistent storage | Databases, application data |
+| Bind Mount | Mounts a host directory | Development |
+| tmpfs | Memory-backed filesystem | Temporary or sensitive data |
+
+---
+
+# Docker Volumes
+
+Docker manages the storage location.
+
+Create a volume:
+
+```bash
+docker volume create pgdata
+```
+
+Use it:
+
+```bash
+docker run \
+-v pgdata:/var/lib/postgresql/data \
+postgres:16
+```
+
+Advantages:
+
+- Persistent
+- Portable
+- Docker-managed
+- Recommended for databases
+
+---
+
+# Bind Mounts
+
+Bind mounts expose an existing directory from the host.
+
+Linux example:
+
+```bash
+docker run \
+-v /home/user/app:/app \
+node:20
+```
+
+Windows example:
+
+```powershell
+docker run `
+-v C:\app:/app `
+node:20
+```
+
+Advantages:
+
+- Easy code editing
+- Ideal for development
+- Changes are immediately reflected inside the container
+
+---
+
+# tmpfs Mounts
+
+tmpfs stores data **only in memory**.
+
+```bash
+docker run \
+--tmpfs /app/tmp \
+nginx
+```
+
+Characteristics:
+
+- Fast
+- No disk writes
+- Data disappears when the container stops
+
+Ideal for:
+
+- Temporary files
+- Cache
+- Secrets
+- Sensitive information
+
+---
+
+# Volume vs Bind Mount vs tmpfs
+
+| Feature | Volume | Bind Mount | tmpfs |
+|---------|---------|------------|--------|
+| Persistent | ✅ | ✅ | ❌ |
+| Docker Managed | ✅ | ❌ | ❌ |
+| Uses Host Directory | ❌ | ✅ | ❌ |
+| Uses RAM | ❌ | ❌ | ✅ |
+| Best For | Databases | Development | Temporary Data |
+
+---
+
+# Inspect Docker Volumes
+
+List volumes:
+
+```bash
+docker volume ls
+```
+
+Inspect a volume:
+
+```bash
+docker volume inspect mongodb
+```
+
+Example output:
+
+```json
+[
+  {
+    "Name": "mongodb",
+    "Driver": "local",
+    "Mountpoint": "/var/lib/docker/volumes/mongodb/_data"
+  }
+]
+```
+
+---
+
+# Remove Volumes
+
+Remove one volume:
+
+```bash
+docker volume rm mongodb
+```
+
+Remove unused volumes:
+
+```bash
+docker volume prune
+```
+
+---
+
+# Best Practices
+
+- ✅ Use **Volumes** for databases (MongoDB, PostgreSQL, MySQL, Redis).
+- ✅ Use **Bind Mounts** during local development.
+- ✅ Use **tmpfs** for temporary or sensitive data.
+- ❌ Avoid storing important data in a container's writable layer.
+- ✅ Inspect volumes regularly using `docker volume inspect`.
+- ✅ Back up Docker volumes before deleting them.
