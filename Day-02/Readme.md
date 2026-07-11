@@ -55,5 +55,45 @@ Example Command
 
 This command runs a BusyBox container with no network connectivity, providing complete network isolation.
 
+---
+
+# Docker Networking Internals
+
+The default Docker network mode is usually **bridge**. Docker gives a bridge container its own network namespace, then connects it to the host with a virtual Ethernet pair (**veth pair**).
+
+1. One veth end is placed in the container as `eth0`.
+2. The host end connects to the `docker0` Linux bridge.
+3. Docker configures NAT so containers can reach external networks.
+4. Published ports forward host traffic to the container port.
+
+```mermaid
+flowchart LR
+    A[Host port 8080] --> B[NAT / port publishing]
+    B --> C[docker0 bridge]
+    C --> D[veth host end]
+    D <--> E[veth container end: eth0]
+    E --> F[Application on container port 80]
+    C --> G[Host network interface]
+    G --> H[Internet]
+```
+
+```bash
+docker run -p 8080:80 nginx
+```
+
+This maps `host:8080` to `container:80`. The container has its own network stack, while Docker's host-side networking rules deliver published traffic.
+
+## Network Modes
+
+| Mode | Meaning |
+| --- | --- |
+| `bridge` | Default private network for containers on one host |
+| `host` | Container shares the host network namespace |
+| `none` | No network except loopback |
+| `overlay` | Multi-host network, commonly used by orchestrators |
+| `macvlan` | Container appears as a device on the physical LAN |
+
+> Bridge networking commonly uses a container network namespace, veth pair, `docker0` bridge, and NAT/port-publishing rules.
+
 
 

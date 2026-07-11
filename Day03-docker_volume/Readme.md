@@ -332,3 +332,28 @@ HTTPS: https://<host-ip>:9443
 https://54.71.74.129:9443/
 ![alt text](image.png)
 This command sets up Portainer with HTTPS access. The version specified (2.11.1) is the one you're pulling from Docker Hub.        
+
+---
+
+# Container Storage Internals
+
+Every running container has a thin writable layer above read-only image layers. It is useful for temporary changes, but removing the container removes this layer, so it is not appropriate for important application data.
+
+## Storage Choices
+
+| Type | Description | Best use |
+| --- | --- | --- |
+| Volume | Docker-managed persistent storage | Databases and application data |
+| Bind mount | A specific host path mounted into the container | Local development and direct host access |
+| tmpfs mount | Memory-backed temporary storage | Sensitive or temporary data |
+
+```bash
+# Docker-managed volume
+docker volume create pgdata
+docker run -v pgdata:/var/lib/postgresql/data postgres:16
+
+# Bind mount (Windows example)
+docker run -v C:\app:/app node:20
+```
+
+Volumes are independent of a container lifecycle, so they are preferred for persistent data. Bind mounts expose a selected host directory, which is useful in development. Use tmpfs when data should remain only in memory.

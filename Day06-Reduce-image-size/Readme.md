@@ -158,3 +158,27 @@ Reduced Attack Surface: Since Distroless images contain only your application an
 Smaller Image Size: By excluding unnecessary components, Distroless images are significantly smaller in size compared to traditional Linux distribution-based images. This results in faster image pulls and reduced storage costs.
 
 https://github.com/GoogleContainerTools/distroless
+
+---
+
+# Docker Build Cache Internals
+
+Docker builds images layer by layer. If an instruction and its inputs have not changed, Docker can reuse the cached layer. When a layer changes, that layer and the following layers usually rebuild.
+
+Put stable, expensive work before frequently changing application source. For a Node.js application, copy dependency manifests and install dependencies before copying the rest of the project:
+
+```dockerfile
+FROM node:20
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+Changing application source can now reuse the `npm install` layer. Changing `package.json` or its lockfile correctly invalidates that dependency layer.
+
+- Keep frequently changing files late in the Dockerfile.
+- Use `.dockerignore` to avoid sending unnecessary build-context files.
+- Combine related package-install steps where it improves image size and avoids leaving package-manager caches behind.

@@ -122,3 +122,40 @@ Anused build cache
 - **COPY**: Copies files from your host system to the image. Used for copying local files and directories.
 - **ENTRYPOINT**: Configures a container to run as an executable.
 - **WORKDIR**: Sets the working directory inside the image where subsequent commands will be run from.
+
+---
+
+# Image Layers and OverlayFS
+
+A Docker image is a stack of read-only filesystem layers. Dockerfile instructions such as `RUN` and `COPY` commonly create layers; image configuration stores details such as `CMD`, `ENTRYPOINT`, and environment values. Starting a container adds a thin writable layer above them.
+
+```mermaid
+flowchart BT
+    A[Base image layer] --> B[Package/dependency layer]
+    B --> C[Application file layer]
+    C --> D[Image config: CMD, ENTRYPOINT, ENV]
+    D --> E[Writable container layer]
+```
+
+## Copy-on-Write
+
+When a container changes a file from a read-only image layer, Docker copies it into the writable container layer first. The image layers stay unchanged. This is **copy-on-write**.
+
+On Linux, Docker commonly uses the `overlay2` storage driver, based on OverlayFS:
+
+| OverlayFS directory | Purpose |
+| --- | --- |
+| `lowerdir` | Read-only image layers |
+| `upperdir` | Writable container layer |
+| `merged` | Unified view seen inside the container |
+| `workdir` | OverlayFS internal working area |
+
+```mermaid
+flowchart TD
+    A[Merged filesystem view] --> B[OverlayFS / overlay2]
+    B --> C[upperdir: writable container layer]
+    B --> D[lowerdir: read-only image layers]
+    B --> E[workdir: OverlayFS internal state]
+```
+
+> Images are immutable layered templates; a running container adds a writable layer on top.

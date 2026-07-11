@@ -143,3 +143,129 @@ Commands:
   update      Update configuration of one or more containers
   wait        Block until one or more containers stop, then print their exit codes
  Run 'docker COMMAND --help' for more information on a command. 
+
+---
+
+# Docker Internals: Processes, Isolation, and Security
+
+## The Core Idea
+
+Docker containers are normal host processes with Linux kernel features applied
+around them; they are not lightweight virtual machines.
+
+- **Namespaces** isolate what a process can see.
+- **Cgroups** limit and account for what it can use.
+- **Union filesystems** provide its layered filesystem.
+- **Capabilities**, **seccomp**, and **AppArmor/SELinux** reduce privileges.
+
+> Namespaces isolate visibility; cgroups limit resource usage.
+
+## Docker Architecture Internals
+
+```mermaid
+flowchart TD
+    A[Docker CLI<br/>docker run nginx] --> B[Docker daemon<br/>dockerd]
+    B --> C[containerd<br/>lifecycle manager]
+    C --> D[runc<br/>OCI runtime]
+    D --> E[Linux kernel]
+    E --> F[Namespaces]
+    E --> G[Cgroups]
+    E --> H[OverlayFS / overlay2]
+    E --> I[Security controls]
+```
+
+- The **CLI** sends API requests to `dockerd`.
+- **dockerd** manages images, containers, networks, and volumes.
+- **containerd** manages image pulls, snapshots, and container lifecycle.
+- **runc** creates the isolated process from an OCI runtime specification.
+- The **Linux kernel** provides the actual controls.
+
+## What Happens During `docker run nginx`
+
+`docker run` is roughly `docker create` followed by `docker start`.
+
+```mermaid
+sequenceDiagram
+    participant CLI as Docker CLI
+    participant Daemon as dockerd
+    participant Containerd as containerd
+    participant Runtime as runc
+    participant Kernel as Linux kernel
+    CLI->>Daemon: Create and start request
+    Daemon->>Containerd: Check or pull image layers
+    Daemon->>Containerd: Create writable layer and OCI config
+    Containerd->>Runtime: Start OCI task
+    Runtime->>Kernel: Create namespaces, cgroups, mounts, security profile
+    Runtime->>Kernel: Start ENTRYPOINT/CMD as PID 1
+```
+
+1. Docker finds or pulls image layers, then adds a thin writable layer.
+2. Docker prepares the OCI runtime specification and networking.
+3. `runc` asks the kernel to apply namespaces, cgroups, mounts, and security.
+4. The image `ENTRYPOINT` or `CMD` starts as PID 1 in the container.
+
+## Namespaces and Cgroups
+
+| Namespace | What it isolates | Example |
+| --- | --- | --- |
+| PID | Process IDs | Application sees itself as PID 1 |
+| NET | Network stack | Own interfaces, routes, and ports |
+| MNT | Mount points | Own root filesystem view |
+| UTS | Hostname/domain name | Own hostname |
+| IPC | Shared memory and queues | Isolated IPC |
+| USER | User and group IDs | Root can map to an unprivileged host user |
+| CGROUP | Cgroup view | Own cgroup hierarchy view |
+
+```bash
+docker run --memory=512m --cpus=1 nginx
+```
+
+```mermaid
+flowchart LR
+    A[Container process] --> B[Namespaces]
+    A --> C[Cgroups]
+    B --> D[Isolated view: PID, network, mounts, hostname]
+    C --> E[Limits: CPU, memory, PIDs, I/O]
+```
+
+A process can be PID 1 inside its container while having a different normal PID on the host.
+
+## Security Fundamentals
+
+Containers share the host kernel, so they are not a full VM-grade security
+boundary. Docker layers namespaces and cgroups with capabilities, seccomp,
+AppArmor or SELinux, user namespaces, and optional read-only root filesystems.
+
+Avoid `--privileged` unless essential: it grants broad capabilities and device access.
+
+```bash
+docker run --read-only nginx
+docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE nginx
+docker run --user 1000:1000 node:20
+```
+
+## Containers vs Virtual Machines
+
+| Topic | Container | Virtual machine |
+| --- | --- | --- |
+| Isolation | OS/process-level | Hardware virtualization |
+| Kernel | Shares host kernel | Guest OS kernel |
+| Startup and size | Usually faster and smaller | Usually slower and larger |
+| Boundary strength | Good, but shared kernel | Stronger isolation |
+
+## PID 1 and Interview Review
+
+When PID 1 exits, the container exits. PID 1 also handles signals differently
+and should reap child processes; applications that do not do this may use `tini`.
+
+- An **image** is a read-only layered template; a **container** is its running instance with a writable layer.
+- Docker uses namespaces for isolation, cgroups for resource control, and filesystem and security controls around the process.
+
+```text
+CLI -> dockerd -> containerd -> runc -> Linux kernel
+namespaces = what the container can see
+cgroups = what the container can use
+overlay2 = layered container filesystem
+veth + docker0 + NAT = common bridge networking path
+volumes = persistent data outside container lifecycle
+```

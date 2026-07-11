@@ -96,3 +96,21 @@ Primary Use:
 
 CMD: Best used to provide default arguments or a default command that can be easily overridden.
 ENTRYPOINT: Best used when you want the container to behave like an executable and ensure that a specific command is always run.
+
+---
+
+# `CMD` and `ENTRYPOINT` at Runtime
+
+| Instruction | Purpose | `docker run image args...` behaviour |
+| --- | --- | --- |
+| `CMD` | Default command or default arguments | Usually replaced by the supplied command |
+| `ENTRYPOINT` | Main executable for the container | Supplied values are appended as arguments in exec form |
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+The default command is `python app.py`. For an image built this way, `docker run image other.py` runs `python other.py`.
+
+Use `ENTRYPOINT` when the image should behave like one executable. Use `CMD` for a default command or default arguments that callers can override easily. The launched process is normally PID 1 in the container, so its exit ends the container lifecycle.
