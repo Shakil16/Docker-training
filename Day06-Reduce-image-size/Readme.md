@@ -1,171 +1,122 @@
-To test the Java multistage build application, clone the below repo
-git clone https://github.com/spring-projects/spring-petclinic.git
+# Day 06: Reducing Docker Image Size
 
+## Objectives
 
-Use Case
-How to Reduce Docker Image Size
-Minimizing Docker image sizes accelerates container deployment, and for large-scale operations, this can lead to substantial savings in storage space.
+By the end of this session, you should be able to:
 
-1. Use Official Minimal Base Images:
-When building Docker images, always start with an official base image. Instead of using a full-sized OS image, opt for lightweight versions like python:3.9-slim or python:3.9-alpine. These minimal images contain only the essentials, significantly reducing the image size.
+- explain why smaller images are important
+- apply practical techniques to reduce image size
+- use multi-stage builds effectively
+- understand Docker build cache behavior
 
-Taking an example for a Python image, here are the image sizes for python:3.9 vs python:3.9-alpine:
+## 1. Why Smaller Images Matter
 
+Smaller Docker images are faster to build, faster to pull, and cheaper to store and ship.
 
-Python 3.9-alpine is a whomping 95.2% smaller than Python 3.9.
+Benefits include:
 
-2. Minimize Layers:
-Every command in your Dockerfile (like RUN, COPY, etc.) generates a separate layer in the final image. Grouping similar commands together into one step decreases the total number of layers, leading to a smaller overall image size.
+- quicker deployments
+- lower storage and bandwidth usage
+- reduced attack surface
+- faster startup time
 
-Instead of doing this:
+## 2. Best Practices to Reduce Image Size
 
-RUN apk update
-RUN apk add --no-cache git
-RUN rm -rf /var/cache/apk/*
-Do this:
+### Use a minimal base image
 
+Prefer official lightweight images such as:
+
+- `python:3.11-slim`
+- `python:3.11-alpine`
+- `node:20-alpine`
+
+### Combine related instructions
+
+Instead of writing many separate `RUN` steps, combine them.
+
+```dockerfile
 RUN apk update && apk add --no-cache git && rm -rf /var/cache/apk/*
-3. Use .dockerignore File:
-When creating Docker images, Docker transfers all the files from your project directory into the image by default. To avoid including unneeded files, use a .dockerignore file to exclude them.
+```
 
-Sample .dockerignore
+This reduces the number of layers and avoids unnecessary files in the final image.
 
+### Use `.dockerignore`
+
+Avoid copying unnecessary files into the build context.
+
+```gitignore
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 venv/
-4. Multi-Stage Builds (Mandatory atleast for me 😀):
-Multi-stage builds enable you to divide the build process from the final runtime environment. This approach is particularly beneficial when your application needs certain tools for compiling that are not necessary in the final image.
+```
 
-Single Stage Vs Multi-Stage Builds Comparison:
+### Keep changing files late in the Dockerfile
 
-Take an example of a Flask app built using the python:3.9-alpine image with a single-stage Dockerfile like:
+Place files that change often toward the end so Docker can reuse cached layers.
 
-# Use an official Python runtime as a parent image
-    FROM python:3.9-alpine
+## 3. Multi-Stage Builds
 
-    # Install necessary build dependencies
-    RUN apk add --no-cache build-base \
-        && apk add --no-cache gfortran musl-dev lapack-dev
+Multi-stage builds separate the build environment from the final runtime image.
 
-    # Set the working directory
-    WORKDIR /app
+### Single-stage example
 
-    # Copy the requirements file and install dependencies
-    COPY requirements.txt ./
-    RUN pip install --no-cache-dir -r requirements.txt
+```dockerfile
+FROM python:3.9-alpine
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
 
-    # Copy the rest of the application code to the working directory
-    COPY . .
+This often creates a larger image because build tools and intermediate files remain in the final output.
 
-    # Expose the port the app will run on
-    EXPOSE 5000
+### Multi-stage example
 
-    # Run the Flask app
-    CMD ["python", "app.py"]
+```dockerfile
+# Stage 1: Build
+FROM python:3.9-alpine AS builder
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 
-Docker - Single Stage Build Output
+# Stage 2: Runtime
+FROM python:3.9-alpine
+WORKDIR /app
+COPY --from=builder /app /app
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
 
-The image built was of size: 588 MB
+This keeps the runtime image smaller and cleaner.
 
-Redesigned Multi Stage Dockerfile looks like:
+## 4. Distroless Images
 
+Distroless images contain only your application and its runtime dependencies.
 
-    # Dockerfile.multi-stage
+They are useful when you want:
 
-    # Stage 1: Build
-    FROM python:3.9-alpine AS builder
-
-    # Install necessary build dependencies
-    RUN apk add --no-cache build-base \
-        && apk add --no-cache gfortran musl-dev lapack-dev
-
-    # Set the working directory
-    WORKDIR /app
-
-    # Copy the requirements file and install dependencies
-    COPY requirements.txt ./
-    RUN pip install --no-cache-dir -r requirements.txt
-
-    # Copy the rest of the application code to the working directory
-    COPY . .
-
-    # Uninstall unnecessary dependencies
-    RUN pip uninstall -y pandas && apk del build-base gfortran musl-dev lapack-dev
-
-    # Stage 2: Production
-    FROM python:3.9-alpine
-
-    # Set the working directory
-    WORKDIR /app
-
-    # Copy only the necessary files from the build stage
-    COPY --from=builder /app /app
-
-    # Expose the port the app will run on
-    EXPOSE 5000
-
-    # Run the Flask app
-    CMD ["python", "app.py"]
-
-Docker - Multi Stage Build Output
-
-The new image size was: Only 47.7 MB
-
-The application works exactly the same, but it spins up much faster in this version.
-
-This is an illustration of the drastic effect of Multi-Stage Builds.
-
-
-
-5. Use Static Binaries and the 'scratch' Base Image:
-If your application can be compiled into a static binary, you can use the scratch base image, which is essentially an empty image. This leads to extremely small final images.
+- a very small image
+- a smaller attack surface
+- fewer package manager tools inside the container
 
 Example:
 
-    FROM scratch
-    COPY myapp /
-    CMD ["/myapp"]
-    Works well for applications that don’t need operating system-level dependencies.
+```dockerfile
+FROM gcr.io/distroless/python3
+COPY app.py /app.py
+CMD ["/app.py"]
+```
 
-Security Considerations
-Use Trusted and Official Base Images
+## 5. Docker Build Cache
 
-Run Containers as Non-Root Users
+Docker reuses cached layers when earlier instructions and inputs have not changed.
 
-Regularly scan your Docker images for known vulnerabilities
-
-Limit the network exposure of your container by restricting the ports and IP addresses
-
-docker run -p 127.0.0.1:8080:8080 myimage
-Avoid hardcoding sensitive information like API keys or passwords directly into your Dockerfile or environment variables.
-
-Final reminder,
-
-Less the image size = Faster deployments + Quicker scaling + Lean infrastructure
-
-Google Distroless Images and Docker Multi-Stage Builds
-
-What are Distroless Images?
-
-Distroless images are Docker images built by Google that contain only your application and its runtime dependencies, without a package manager or any additional software. This approach minimizes the attack surface and reduces the size of your container image.
-
-Why Use Distroless Images?
-
-Reduced Attack Surface: Since Distroless images contain only your application and its dependencies, they eliminate unnecessary tools and libraries that could be exploited by attackers.
-
-Smaller Image Size: By excluding unnecessary components, Distroless images are significantly smaller in size compared to traditional Linux distribution-based images. This results in faster image pulls and reduced storage costs.
-
-https://github.com/GoogleContainerTools/distroless
-
----
-
-# Docker Build Cache Internals
-
-Docker builds images layer by layer. If an instruction and its inputs have not changed, Docker can reuse the cached layer. When a layer changes, that layer and the following layers usually rebuild.
-
-Put stable, expensive work before frequently changing application source. For a Node.js application, copy dependency manifests and install dependencies before copying the rest of the project:
+A better pattern is:
 
 ```dockerfile
 FROM node:20
@@ -177,8 +128,28 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-Changing application source can now reuse the `npm install` layer. Changing `package.json` or its lockfile correctly invalidates that dependency layer.
+Why this works well:
 
-- Keep frequently changing files late in the Dockerfile.
-- Use `.dockerignore` to avoid sending unnecessary build-context files.
-- Combine related package-install steps where it improves image size and avoids leaving package-manager caches behind.
+- dependency files are copied first
+- `npm install` is cached until dependencies change
+- application source changes do not always force a full reinstall
+
+## 6. Practical Commands
+
+```bash
+docker build -t myapp:latest .
+docker images | sort -k7
+docker run --rm -p 5000:5000 myapp:latest
+```
+
+## 7. Security Checklist
+
+- use official and trusted base images
+- run containers as non-root users
+- limit exposed ports
+- avoid hardcoding secrets in images
+- scan images for vulnerabilities regularly
+
+## 8. Key Takeaway
+
+Reducing image size means faster builds, faster deployments, and a leaner production environment.
